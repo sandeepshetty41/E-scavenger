@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>LEVEL MAP</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
+
+<style>
+body{
+  margin:0;
+  font-family:Orbitron;
+  background:#05070f;
+  color:#00ffe1;
+  text-align:center;
+  overflow:hidden;
+}
+
+/* 🎥 VIDEO BACKGROUND */
+#bgVideo{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  z-index:-2;
+  filter:brightness(0.55) contrast(1.2);
+}
+
+/* DARK OVERLAY */
+.overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,0.6);
+  z-index:-1;
+}
+
+/* GRID */
+.grid{
+  display:grid;
+  grid-template-columns:repeat(3,120px);
+  gap:25px;
+  justify-content:center;
+  margin-top:60px;
+}
+
+/* BASE BOX */
+.box{
+  height:110px;
+  width:110px;
+  border:1px solid #00ffe1;
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  cursor:pointer;
+  transition:0.3s;
+  position:relative;
+  overflow:hidden;
+}
+
+/* 🔥 HOVER NEON PULSE */
+.box:hover{
+  box-shadow:0 0 20px #00ffe1, 0 0 40px #00ffe1;
+  transform:scale(1.05);
+}
+
+/* LOCKED */
+.locked{
+  opacity:0.2;
+  pointer-events:none;
+}
+
+/* COMPLETED */
+.done{
+  color:#00ff88;
+  border-color:#00ff88;
+  box-shadow:0 0 10px #00ff88;
+}
+
+/* CURRENT LEVEL - PULSE ANIMATION */
+.current{
+  color:#00ffe1;
+  border:2px solid #00ffe1;
+  animation:pulse 1.5s infinite;
+}
+
+@keyframes pulse{
+  0%{box-shadow:0 0 5px #00ffe1;}
+  50%{box-shadow:0 0 25px #00ffe1;}
+  100%{box-shadow:0 0 5px #00ffe1;}
+}
+
+/* ⚡ CLICK FLASH EFFECT */
+.flash{
+  position:absolute;
+  width:100%;
+  height:100%;
+  background:white;
+  opacity:0.6;
+  animation:flashAnim 0.4s ease-out;
+}
+
+@keyframes flashAnim{
+  from{opacity:0.7;}
+  to{opacity:0;}
+}
+
+/* UPGRADE SCREEN */
+#upgrade{
+  position:fixed;
+  inset:0;
+  display:none;
+  justify-content:center;
+  align-items:center;
+  background:black;
+  color:#00ff88;
+  font-size:30px;
+  z-index:999;
+}
+</style>
+</head>
+
+<body>
+
+<!-- 🎥 BACKGROUND VIDEO RESTORED -->
+<video autoplay muted loop id="bgVideo">
+  <source src="bg1.mp4" type="video/mp4">
+</video>
+
+<div class="overlay"></div>
+
+<h1>LEVEL MAP</h1>
+
+<div class="grid" id="grid"></div>
+
+<div id="upgrade">⚡ UPGRADING...</div>
+
+<script>
+
+let level = parseInt(sessionStorage.getItem("level")) || 0;
+let grid=document.getElementById("grid");
+
+/* UPGRADE SCREEN */
+if(sessionStorage.getItem("levelUp")==="true"){
+  sessionStorage.removeItem("levelUp");
+
+  let u=document.getElementById("upgrade");
+  u.style.display="flex";
+
+  setTimeout(()=>u.style.display="none",1500);
+}
+
+/* BUILD MAP */
+for(let i=1;i<=5;i++){
+
+let d=document.createElement("div");
+d.className="box";
+
+if(i>level+1){
+  d.classList.add("locked");
+  d.innerHTML="🔒";
+}
+else if(i===level+1){
+  d.classList.add("current");
+  d.innerHTML="▶ LEVEL "+i;
+
+  d.onclick=()=>{
+
+    /* ⚡ CLICK FLASH EFFECT */
+    let flash=document.createElement("div");
+    flash.className="flash";
+    d.appendChild(flash);
+
+    setTimeout(()=>flash.remove(),400);
+
+    setTimeout(()=>{
+      sessionStorage.setItem("level",i-1);
+      window.location.href="game.html";
+    },300);
+  };
+}
+else{
+  d.classList.add("done");
+  d.innerHTML="✔ LEVEL "+i;
+}
+
+grid.appendChild(d);
+}
+
+</script>
+
+</body>
+</html>
