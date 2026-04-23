@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDZbLNAmcWBrNBNwR4c_sEtXXxYBPc63ts",
+  authDomain: "e-scavenger.firebaseapp.com",
+  databaseURL: "https://e-scavenger-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "e-scavenger"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+/* GLOBAL SAVE FUNCTION */
+window.saveScore = async function(status, timeTaken, team, level){
+  try{
+    await push(ref(db, "leaderboard"), {
+      name: team,
+      time: timeTaken,
+      level: level,
+      status: status
+    });
+    console.log("Saved ✅");
+  }catch(e){
+    console.error("Save error ❌", e);
+  }
+};
+</script>
+
+<title>NEON SCAVENGER</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
+
+<style>
+body{margin:0;font-family:Orbitron;background:#050b1a;color:#00ffe1;text-align:center}
+.box{width:60%;margin:auto;margin-top:8%;padding:35px;border:1px solid #00ffe1;background:rgba(0,0,0,0.6);}
+input{width:70%;padding:10px;background:black;color:#00ffe1;border:1px solid #00ffe1;text-align:center;}
+button{margin-top:10px;padding:10px 20px;background:#00ffe1;border:none;cursor:pointer;}
+#popup{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);padding:20px;display:none;border:2px solid;}
+.green{color:#00ff88;border-color:#00ff88;background:black}
+.red{color:red;border-color:red;background:black}
+.screen{position:fixed;inset:0;display:none;justify-content:center;align-items:center;font-size:50px;}
+#success{background:black;color:#00ff88;}
+#fail{background:black;color:red;}
+</style>
+
+</head>
+<body>
+
+<div id="success" class="screen">🟢 SUCCESS</div>
+<div id="fail" class="screen">🔴 GAME OVER</div>
+
+<div class="box">
+  <h2 id="q"></h2>
+  <input id="ans">
+  <br>
+  <button onclick="check()">SUBMIT</button>
+  <button onclick="hint()">HINT</button>
+</div>
+
+<div id="popup"></div>
+
+<script>
+
+/* TIMER */
+const TOTAL_TIME = 120*60;
+let startTime = parseInt(sessionStorage.getItem("startTime")) || Date.now();
+sessionStorage.setItem("startTime", startTime);
+
+let level = parseInt(sessionStorage.getItem("level")) || 0;
+let qIndex = 0;
+let team = sessionStorage.getItem("team") || "Unknown";
+
+/* QUESTIONS */
+const gameData = [
+
+[
+{q:"What is the main hardware component that processes all instructions inside a computer system?",a:"cpu",h:"brain"},
+{q:"What tool is used to write and test code?",a:"ide",h:"editor"}
+],
+
+[
+{q:"Caesar shift: b becomes what if shifted backward by 1?",a:"a",h:"previous"},
+{q:"2 power 3 equals?",a:"8",h:"exponent"}
+],
+
+[
+{q:"If computer has no power supply, its state is?",a:"off",h:"power"},
+{q:"Fixing code errors is called?",a:"debugging",h:"fix"}
+],
+
+[
+{q:"print(hello) missing quotes causes what error?",a:"syntaxerror",h:"format"},
+{q:"fixing code errors is?",a:"debugging",h:"fix"}
+],
+
+[
+{q:"Main processing unit of computer is?",a:"cpu",h:"brain"},
+{q:"Main goal of computer science?",a:"problem",h:"solve"}
+]
+
+];
+
+/* LOAD */
+function load(){
+  document.getElementById("q").innerText = gameData[level][qIndex].q;
+  document.getElementById("ans").value = "";
+}
+load();
+
+/* POPUP */
+function popup(msg,type){
+  let p=document.getElementById("popup");
+  p.innerText=msg;
+  p.className=type;
+  p.style.display="block";
+  setTimeout(()=>p.style.display="none",800);
+}
+
+function hint(){
+  popup(gameData[level][qIndex].h,"red");
+}
+
+/* END GAME */
+async function endGame(success){
+  let timeTaken = Math.floor((Date.now()-startTime)/1000);
+
+  await saveScore(
+    success ? "COMPLETED":"TIME UP",
+    timeTaken,
+    team,
+    level+1
+  );
+
+  document.getElementById(success?"success":"fail").style.display="flex";
+
+  setTimeout(()=>{
+    window.location.href="leaderboard.html";
+  },2000);
+}
+
+/* CHECK */
+function check(){
+  let a=document.getElementById("ans").value.toLowerCase().trim();
+  let c=gameData[level][qIndex].a;
+
+  if(a===c){
+    popup("CORRECT","green");
+    qIndex++;
+
+    setTimeout(()=>{
+      if(qIndex>=gameData[level].length){
+        level++;
+        qIndex=0;
+
+        if(level>=gameData.length){
+          endGame(true);
+          return;
+        }
+
+        sessionStorage.setItem("level",level);
+        window.location.reload();
+      }else{
+        load();
+      }
+    },500);
+
+  }else{
+    popup("WRONG","red");
+  }
+}
+</script>
+
+</body>
+</html>
