@@ -1,20 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, push, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyDZbLNAmcWBrNBNwR4c_sEtXXxYBPc63ts",
-  authDomain: "e-scavenger.firebaseapp.com",
-  databaseURL: "https://e-scavenger-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "e-scavenger"
-};
-
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
-</script>
 
 <title>GAME</title>
 
@@ -391,25 +378,6 @@ function showHint(){
   "💡 " + gameData[level][qIndex].hint;
 }
 
-
-  
-  /* SAVE */
-  function saveToLeaderboard(status){
-
-  let name = prompt("Enter your team name:");
-  if(!name) name = "Anonymous";
-
-  let timeTaken = Date.now() - startTime;
-
-  const newRef = push(ref(db, "leaderboard"));
-
-  set(newRef, {
-    name: name,
-    level: level,
-    time: timeTaken,
-    status: status
-  });
-}
 
 /* CHECK */
 function check(){
