@@ -305,10 +305,9 @@ async function updateTimer(){
  if(remaining <= 0){
 
   let team = sessionStorage.getItem("teamName") || "Unknown Team";
+let elapsed = Date.now() - startTime;
 
-  let elapsed = Date.now() - startTime;
-
-  await saveScore(
+await saveScore(
   "TIME UP",
   elapsed,
   team,
@@ -319,8 +318,7 @@ setTimeout(() => {
   window.location.href = "leaderboard.html";
 }, 1000);
 
-  window.location.href = "leaderboard.html";
-  return;
+return;
 }
 
   let h=Math.floor(remaining/3600000);
@@ -469,42 +467,36 @@ async function check(){
   let elapsed = Date.now() - startTime;
 
   await saveScore(
-  "COMPLETED",
+  "TIME UP",
   elapsed,
   team,
-  gameData.length
+  level + 1
 );
 
-setTimeout(() => {
-  window.location.href = "leaderboard.html";
-}, 1000);
+setTimeout(async ()=>{
+  level++;
+  sessionStorage.setItem("level",level);
+
+ if(level >= gameData.length){
+
+  let team = sessionStorage.getItem("teamName") || "Unknown Team";
+  let elapsed = Date.now() - startTime;
+
+  await saveScore(
+    "COMPLETED",
+    elapsed,
+    team,
+    gameData.length
+  );
+
+  setTimeout(() => {
+    window.location.href = "leaderboard.html";
+  }, 1000);
 
 }else{
-  window.location.href="levels.html";
+  window.location.href = "levels.html";
 }
-        },5000);
-
-      }else{
-        load();
-      }
-
-    },800);
-
-  }else{
-
-    box.classList.add("wrong");
-    feedback.innerText="✖ WRONG";
-    feedback.className="wrongText";
-
-    setTimeout(()=>{
-      box.classList.remove("wrong");
-      feedback.innerText="";
-    },800);
-
-    document.getElementById("ans").value="";
-  }
-}
-
+            
 </script>
 
 </body>
