@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <script type="module">
+<script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
@@ -18,24 +18,15 @@ const db = getDatabase(app);
 /* GLOBAL SAVE FUNCTION */
 window.saveScore = async function(status, timeTaken, team, level){
   try{
-    const scoreData = {
+    await push(ref(db, "leaderboard"), {
       name: team,
       time: timeTaken,
       level: level,
-      status: status,
-      createdAt: Date.now()
-    };
-
-    console.log("Saving:", scoreData);
-
-    await push(ref(db, "leaderboard"), scoreData);
-
-    console.log("Saved successfully ✅");
-
-    return true;
-  } catch(e){
-    console.error("Firebase Save Error ❌", e);
-    return false;
+      status: status
+    });
+    console.log("Saved ✅");
+  }catch(e){
+    console.error("Save error ❌", e);
   }
 };
 </script>
@@ -298,26 +289,12 @@ if(level === 0){
 /* TIMER */
 const TOTAL_TIME = 2*60*60*1000;
 
-async function updateTimer(){
+function updateTimer(){
   let elapsed = Date.now() - startTime;
   let remaining = TOTAL_TIME - elapsed;
 
   if(remaining <= 0){
-
-    let team = sessionStorage.getItem("teamName") || "Unknown Team";
-    let elapsedTime = Date.now() - startTime;
-
-    await saveScore(
-      "TIME UP",
-      elapsedTime,
-      team,
-      level + 1
-    );
-
-    setTimeout(() => {
-      window.location.href = "leaderboard.html";
-    }, 1000);
-
+    window.location.href="leaderboard.html";
     return;
   }
 
@@ -430,95 +407,64 @@ function showHint(){
 }
 
 /* CHECK */
-async function check(){
+function check(){
 
   let box = document.getElementById("gameBox");
   let feedback = document.getElementById("feedback");
 
-  let a = document.getElementById("ans").value.toLowerCase().trim();
+  let a=document.getElementById("ans").value.toLowerCase().trim();
 
-  if(a === gameData[level][qIndex].a){
+  if(a===gameData[level][qIndex].a){
 
     box.classList.add("correct");
-    feedback.innerText = "✔ CORRECT";
-    feedback.className = "correctText";
+    feedback.innerText="✔ CORRECT";
+    feedback.className="correctText";
 
-    setTimeout(() => {
+    setTimeout(()=>{
       box.classList.remove("correct");
-      feedback.innerText = "";
+      feedback.innerText="";
       
       qIndex++;
 
-      if(qIndex >= gameData[level].length){
+      if(qIndex>=gameData[level].length){
 
         let completeVid = document.getElementById("completeVideo");
         completeVid.style.display = "block";
         completeVid.currentTime = 0;
         completeVid.play();
 
-        setTimeout(() => {
+        setTimeout(()=>{
+          level++;
+          sessionStorage.setItem("level",level);
 
-          (async () => {
+          if(level>=gameData.length){
+            window.location.href="leaderboard.html";
+          }else{
+            window.location.href="levels.html";
+          }
+        },5000);
 
-            level++;
-            sessionStorage.setItem("level", level);
-
-            if(level >= gameData.length){
-
-              let team = sessionStorage.getItem("teamName") || "Unknown Team";
-              let elapsed = Date.now() - startTime;
-
-              await saveScore(
-                "TIME UP",
-                elapsed,
-                team,
-                level + 1
-              );
-
-              setTimeout(() => {
-
-                (async () => {
-
-                  level++;
-                  sessionStorage.setItem("level", level);
-
-                  if (level >= gameData.length) {
-
-                    let team = sessionStorage.getItem("teamName") || "Unknown Team";
-                    let elapsed = Date.now() - startTime;
-
-                    await saveScore(
-                      "COMPLETED",
-                      elapsed,
-                      team,
-                      gameData.length
-                    );
-
-                    setTimeout(() => {
-                      window.location.href = "leaderboard.html";
-                    }, 1000);
-
-                  } else {
-                    window.location.href = "levels.html";
-                  }
-
-                })();
-
-              }, 5000);
-
-            }
-
-          })();
-
-        }, 1000);
-
+      }else{
+        load();
       }
 
-    }, 300);
+    },800);
 
+  }else{
+
+    box.classList.add("wrong");
+    feedback.innerText="✖ WRONG";
+    feedback.className="wrongText";
+
+    setTimeout(()=>{
+      box.classList.remove("wrong");
+      feedback.innerText="";
+    },800);
+
+    document.getElementById("ans").value="";
   }
 }
-            
+
 </script>
 
 </body>
