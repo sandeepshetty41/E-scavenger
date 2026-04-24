@@ -378,7 +378,6 @@ function showHint(){
   "💡 " + gameData[level][qIndex].hint;
 }
 
-
 /* CHECK */
 function check(){
 
@@ -407,29 +406,15 @@ function check(){
         completeVid.play();
 
         setTimeout(()=>{
-  level++;
-  sessionStorage.setItem("level",level);
+          level++;
+          sessionStorage.setItem("level",level);
 
-  if(level>=gameData.length){
-
-    let completeVid = document.getElementById("completeVideo");
-    completeVid.style.display = "block";
-    completeVid.currentTime = 0;
-    completeVid.play();
-
-    setTimeout(()=>{
-
-      saveToLeaderboard("COMPLETED");  // ✅ ADD HERE
-
-      window.location.href="leaderboard.html";
-
-    },5000);
-
-  }else{
-    window.location.href="levels.html";
-  }
-
-},5000);
+          if(level>=gameData.length){
+            window.location.href="leaderboard.html";
+          }else{
+            window.location.href="levels.html";
+          }
+        },5000);
 
       }else{
         load();
