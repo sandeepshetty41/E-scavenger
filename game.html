@@ -302,24 +302,24 @@ async function updateTimer(){
   let elapsed = Date.now() - startTime;
   let remaining = TOTAL_TIME - elapsed;
 
- if(remaining <= 0){
+  if(remaining <= 0){
 
-  let team = sessionStorage.getItem("teamName") || "Unknown Team";
-let elapsed = Date.now() - startTime;
+    let team = sessionStorage.getItem("teamName") || "Unknown Team";
+    let elapsedTime = Date.now() - startTime;
 
-await saveScore(
-  "TIME UP",
-  elapsed,
-  team,
-  level + 1
-);
+    await saveScore(
+      "TIME UP",
+      elapsedTime,
+      team,
+      level + 1
+    );
 
-setTimeout(() => {
-  window.location.href = "leaderboard.html";
-}, 1000);
+    setTimeout(() => {
+      window.location.href = "leaderboard.html";
+    }, 1000);
 
-return;
-}
+    return;
+  }
 
   let h=Math.floor(remaining/3600000);
   let m=Math.floor((remaining%3600000)/60000);
@@ -435,66 +435,88 @@ async function check(){
   let box = document.getElementById("gameBox");
   let feedback = document.getElementById("feedback");
 
-  let a=document.getElementById("ans").value.toLowerCase().trim();
+  let a = document.getElementById("ans").value.toLowerCase().trim();
 
-  if(a===gameData[level][qIndex].a){
+  if(a === gameData[level][qIndex].a){
 
     box.classList.add("correct");
-    feedback.innerText="✔ CORRECT";
-    feedback.className="correctText";
+    feedback.innerText = "✔ CORRECT";
+    feedback.className = "correctText";
 
-    setTimeout(()=>{
+    setTimeout(() => {
       box.classList.remove("correct");
-      feedback.innerText="";
+      feedback.innerText = "";
       
       qIndex++;
 
-      if(qIndex>=gameData[level].length){
+      if(qIndex >= gameData[level].length){
 
         let completeVid = document.getElementById("completeVideo");
         completeVid.style.display = "block";
         completeVid.currentTime = 0;
         completeVid.play();
 
-        setTimeout(()=>{
-          level++;
-          sessionStorage.setItem("level",level);
+        setTimeout(() => {
 
-          if(level>=gameData.length){
+          (async () => {
 
-  let team = sessionStorage.getItem("teamName") || "Unknown Team";
+            level++;
+            sessionStorage.setItem("level", level);
 
-  let elapsed = Date.now() - startTime;
+            if(level >= gameData.length){
 
-  await saveScore(
-  "TIME UP",
-  elapsed,
-  team,
-  level + 1
-);
+              let team = sessionStorage.getItem("teamName") || "Unknown Team";
+              let elapsed = Date.now() - startTime;
 
-setTimeout(async ()=>{
-  level++;
-  sessionStorage.setItem("level",level);
+              await saveScore(
+                "TIME UP",
+                elapsed,
+                team,
+                level + 1
+              );
 
- if(level >= gameData.length){
+              setTimeout(() => {
 
-  let team = sessionStorage.getItem("teamName") || "Unknown Team";
-  let elapsed = Date.now() - startTime;
+                (async () => {
 
-  await saveScore(
-    "COMPLETED",
-    elapsed,
-    team,
-    gameData.length
-  );
+                  level++;
+                  sessionStorage.setItem("level", level);
 
-  setTimeout(() => {
-    window.location.href = "leaderboard.html";
-  }, 1000);
+                  if (level >= gameData.length) {
 
-}else{
-  window.location.href = "levels.html";
+                    let team = sessionStorage.getItem("teamName") || "Unknown Team";
+                    let elapsed = Date.now() - startTime;
+
+                    await saveScore(
+                      "COMPLETED",
+                      elapsed,
+                      team,
+                      gameData.length
+                    );
+
+                    setTimeout(() => {
+                      window.location.href = "leaderboard.html";
+                    }, 1000);
+
+                  } else {
+                    window.location.href = "levels.html";
+                  }
+
+                })();
+
+              }, 5000);
+
+            }
+
+          })();
+
+        }, 1000);
+
+      }
+
+    }, 300);
+
+  }
 }
             
 </script>
