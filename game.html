@@ -18,15 +18,24 @@ const db = getDatabase(app);
 /* GLOBAL SAVE FUNCTION */
 window.saveScore = async function(status, timeTaken, team, level){
   try{
-    await push(ref(db, "leaderboard"), {
+    const scoreData = {
       name: team,
       time: timeTaken,
       level: level,
-      status: status
-    });
-    console.log("Saved ✅");
-  }catch(e){
-    console.error("Save error ❌", e);
+      status: status,
+      createdAt: Date.now()
+    };
+
+    console.log("Saving:", scoreData);
+
+    await push(ref(db, "leaderboard"), scoreData);
+
+    console.log("Saved successfully ✅");
+
+    return true;
+  } catch(e){
+    console.error("Firebase Save Error ❌", e);
+    return false;
   }
 };
 </script>
@@ -289,7 +298,7 @@ if(level === 0){
 /* TIMER */
 const TOTAL_TIME = 2*60*60*1000;
 
-function updateTimer(){
+async function updateTimer(){
   let elapsed = Date.now() - startTime;
   let remaining = TOTAL_TIME - elapsed;
 
@@ -299,12 +308,16 @@ function updateTimer(){
 
   let elapsed = Date.now() - startTime;
 
-  saveScore(
-    "TIME UP",
-    elapsed,
-    team,
-    level + 1
-  );
+  await saveScore(
+  "TIME UP",
+  elapsed,
+  team,
+  level + 1
+);
+
+setTimeout(() => {
+  window.location.href = "leaderboard.html";
+}, 1000);
 
   window.location.href = "leaderboard.html";
   return;
@@ -419,7 +432,7 @@ function showHint(){
 }
 
 /* CHECK */
-function check(){
+async function check(){
 
   let box = document.getElementById("gameBox");
   let feedback = document.getElementById("feedback");
@@ -455,14 +468,16 @@ function check(){
 
   let elapsed = Date.now() - startTime;
 
-  saveScore(
-    "COMPLETED",
-    elapsed,
-    team,
-    gameData.length
-  );
+  await saveScore(
+  "COMPLETED",
+  elapsed,
+  team,
+  gameData.length
+);
 
+setTimeout(() => {
   window.location.href = "leaderboard.html";
+}, 1000);
 
 }else{
   window.location.href="levels.html";
