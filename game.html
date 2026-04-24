@@ -293,10 +293,22 @@ function updateTimer(){
   let elapsed = Date.now() - startTime;
   let remaining = TOTAL_TIME - elapsed;
 
-  if(remaining <= 0){
-    window.location.href="leaderboard.html";
-    return;
-  }
+ if(remaining <= 0){
+
+  let team = sessionStorage.getItem("teamName") || "Unknown Team";
+
+  let elapsed = Date.now() - startTime;
+
+  saveScore(
+    "TIME UP",
+    elapsed,
+    team,
+    level + 1
+  );
+
+  window.location.href = "leaderboard.html";
+  return;
+}
 
   let h=Math.floor(remaining/3600000);
   let m=Math.floor((remaining%3600000)/60000);
@@ -438,10 +450,23 @@ function check(){
           sessionStorage.setItem("level",level);
 
           if(level>=gameData.length){
-            window.location.href="leaderboard.html";
-          }else{
-            window.location.href="levels.html";
-          }
+
+  let team = sessionStorage.getItem("teamName") || "Unknown Team";
+
+  let elapsed = Date.now() - startTime;
+
+  saveScore(
+    "COMPLETED",
+    elapsed,
+    team,
+    gameData.length
+  );
+
+  window.location.href = "leaderboard.html";
+
+}else{
+  window.location.href="levels.html";
+}
         },5000);
 
       }else{
