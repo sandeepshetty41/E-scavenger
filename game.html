@@ -11,65 +11,14 @@ body{
   font-family:Orbitron;
   color:#00ffe1;
   text-align:center;
-  overflow:hidden;
   background:black;
 }
-
-#levelIntro{
-  position:fixed;
-  inset:0;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  background:black;
-  z-index:20;
-  animation:fadeOut 3s forwards;
-}
-
-@keyframes fadeOut{
-  0%{opacity:1;}
-  70%{opacity:1;}
-  100%{opacity:0;visibility:hidden;}
-}
-
-#bgVideo{
-  position:fixed;
-  inset:0;
-  width:100%;
-  height:100%;
-  object-fit:cover;
-  z-index:-3;
-  opacity:0;
-  transition:0.8s;
-}
-#bgVideo.show{opacity:1;}
-
-#completeVideo{
-  position:fixed;
-  inset:0;
-  width:100%;
-  height:100%;
-  object-fit:cover;
-  z-index:10;
-  display:none;
-}
-
-.overlay{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,0.7);
-  z-index:-2;
-}
-
 .box{
   margin-top:8%;
   padding:30px;
   border:2px solid #00ffe1;
   background:rgba(0,0,0,0.6);
-  box-shadow:0 0 25px #00ffe1;
 }
-
 input{
   padding:12px;
   width:260px;
@@ -78,17 +27,13 @@ input{
   color:#00ffe1;
   text-align:center;
 }
-
 button{
   margin:10px;
   padding:12px 25px;
   background:transparent;
   color:#00ccff;
   border:2px solid #00ccff;
-  cursor:pointer;
 }
-
-#feedback{height:25px;margin-top:10px;}
 .correctText{color:#00ff88;}
 .wrongText{color:red;}
 </style>
@@ -96,27 +41,12 @@ button{
 
 <body>
 
-<div id="levelIntro">
-  <h1 id="levelText"></h1>
-  <p>MISSION START</p>
-</div>
-
-<video id="bgVideo" autoplay muted loop playsinline></video>
-
-<video id="completeVideo" playsinline>
-  <source src="complete.mp4" type="video/mp4">
-</video>
-
-<div class="overlay"></div>
-
 <h2 id="timer"></h2>
 
-<div class="box" id="gameBox">
+<div class="box">
   <h2 id="q"></h2>
-
-  <input id="ans" autocomplete="off">
+  <input id="ans">
   <br>
-
   <button onclick="check()">SUBMIT</button>
   <button onclick="showHint()">HINT</button>
 
@@ -127,11 +57,11 @@ button{
 <!-- FIREBASE -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
+/* 🔴 YOUR FIREBASE CONFIG (keep exactly same as your project) */
 const firebaseConfig = {
   apiKey: "AIzaSyDZbLNAmcWBrNBNwR4c_sEtXXxYBPc63ts",
-  authDomain: "e-scavenger.firebaseapp.com",
   databaseURL: "https://e-scavenger-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "e-scavenger"
 };
@@ -139,74 +69,43 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-window.saveScore = async function(status, timeTaken, level){
-  try {
-    let team = sessionStorage.getItem("team") || "Anonymous";
+/* SAVE FINAL SCORE */
+window.saveScore = async function(timeTaken){
+  let team = sessionStorage.getItem("team") || "Team_"+Math.floor(Math.random()*1000);
 
-    await push(ref(db,"leaderboard"),{
-      name:team,
-      time:timeTaken,
-      level:level + 1,
-      status:status,
-      timestamp:Date.now()
-    });
+  await set(ref(db,"leaderboard/"+team),{
+    name:team,
+    time:timeTaken,
+    level:5,
+    status:"COMPLETED",
+    timestamp:Date.now()
+  });
 
-    console.log("Saved:",status);
-
-  } catch(e){
-    console.error(e);
-  }
+  console.log("✅ Score Saved");
 };
 </script>
 
 <script>
-
 let level = parseInt(sessionStorage.getItem("level")) || 0;
 let startTime = Number(sessionStorage.getItem("startTime")) || Date.now();
 
-/* SAVE START ONLY ONCE */
-if(!sessionStorage.getItem("started")){
-  sessionStorage.setItem("started","true");
-  if(window.saveScore){
-    window.saveScore("STARTED",0,level);
-  }
-}
-
-const levelNames=["RIDDLES","PUZZLES","ENCRYPTION","LOGIC","BOSS"];
-
-document.getElementById("levelText").innerText=
-"LEVEL "+(level+1)+" - "+levelNames[level];
-
-setTimeout(()=>document.getElementById("levelIntro").remove(),3000);
-
-/* VIDEO */
-let vid=document.getElementById("bgVideo");
-vid.innerHTML=`<source src="level${level+1}.mp4">`;
-vid.load();
-vid.play().catch(()=>{});
+/* STORE START TIME */
+sessionStorage.setItem("startTime", startTime);
 
 /* TIMER */
-const TOTAL=2*60*60*1000;
-
 setInterval(()=>{
-  let t=TOTAL-(Date.now()-startTime);
-  if(t<=0) window.location.href="leaderboard.html";
-
-  let h=Math.floor(t/3600000);
-  let m=Math.floor((t%3600000)/60000);
-  let s=Math.floor((t%60000)/1000);
-
-  document.getElementById("timer").innerText=`${h}:${m}:${s}`;
+  let t=(Date.now()-startTime)/1000;
+  document.getElementById("timer").innerText="Time: "+Math.floor(t)+"s";
 },1000);
 
 /* QUESTIONS */
 const gameData=[
 [
 {q:"I am the brain of the computer. What am I?",a:"cpu",hint:"Main processor"},
-{q:"I store temporary memory. What am I?",a:"ram",hint:"Volatile memory"}
+{q:"I store temporary memory. What am I?",a:"ram",hint:"Volatile"}
 ],
 [
-{q:"8 bits equals what?",a:"byte",hint:"Storage unit"},
+{q:"8 bits equals what?",a:"byte",hint:"Unit"},
 {q:"0 and 1 system?",a:"binary",hint:"Base 2"}
 ],
 [
@@ -230,80 +129,54 @@ function load(){
   gameData[level][qIndex].q;
 
   document.getElementById("ans").value="";
-  document.getElementById("hintBox").innerText="";
   document.getElementById("feedback").innerText="";
+  document.getElementById("hintBox").innerText="";
 }
 load();
 
 function showHint(){
   document.getElementById("hintBox").innerText=
-  "💡 "+gameData[level][qIndex].hint;
+  gameData[level][qIndex].hint;
 }
 
 function check(){
 
-  let box=document.getElementById("gameBox");
-  let f=document.getElementById("feedback");
+  let ans=document.getElementById("ans").value.toLowerCase().trim();
 
-  let a=document.getElementById("ans").value.toLowerCase().trim();
+  if(ans===gameData[level][qIndex].a){
 
-  if(a===gameData[level][qIndex].a){
+    qIndex++;
 
-    box.classList.add("correct");
-    f.innerText="✔ CORRECT";
-    f.className="correctText";
+    if(qIndex>=gameData[level].length){
 
-    setTimeout(()=>{
+      level++;
+      sessionStorage.setItem("level",level);
 
-      box.classList.remove("correct");
-      qIndex++;
-
-      if(qIndex>=gameData[level].length){
+      if(level>=gameData.length){
 
         let timeTaken=Math.floor((Date.now()-startTime)/1000);
 
-        if(window.saveScore){
-          window.saveScore("LEVEL COMPLETED",timeTaken,level);
-        }
+        window.saveScore(timeTaken);
 
-        level++;
-        sessionStorage.setItem("level",level);
+        alert("🎉 GAME COMPLETED!");
+        window.location.href="leaderboard.html";
 
-        if(level>=gameData.length){
+      }else{
+        qIndex=0;
+        load();
+      }
 
-          if(window.saveScore){
-            window.saveScore("COMPLETED",timeTaken,level);
-          }
-
-          window.location.href="leaderboard.html";
-
-        }else{
-          qIndex=0;
-          load();
-        }
-
-      }else load();
-
-    },800);
+    }else load();
 
   }else{
-    box.classList.add("wrong");
-    f.innerText="✖ WRONG";
-    f.className="wrongText";
-
-    setTimeout(()=>{
-      box.classList.remove("wrong");
-      f.innerText="";
-    },800);
-
-    document.getElementById("ans").value="";
+    document.getElementById("feedback").innerText="Wrong!";
+    document.getElementById("feedback").className="wrongText";
   }
 }
 
 document.getElementById("ans").addEventListener("keypress",(e)=>{
   if(e.key==="Enter") check();
 });
-
 </script>
 
 </body>
