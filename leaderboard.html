@@ -9,7 +9,7 @@
 body{
   margin:0;
   font-family:Orbitron;
-  background:#05070f;
+  background:black;
   color:#00ffe1;
   text-align:center;
 }
@@ -25,25 +25,22 @@ th,td{
   border:1px solid #00ffe1;
   padding:15px;
 }
-
-.top{color:#00ff88;}
-.fail{color:red;}
 </style>
 </head>
 
 <body>
 
-<h1>🏆 FINAL LEADERBOARD</h1>
-<div id="status">Loading...</div>
+<h1>🏆 LEADERBOARD</h1>
 
 <table>
 <tr>
 <th>RANK</th>
 <th>TEAM</th>
-<th>TIME</th>
-<th>LEVEL</th>
+<th>LEVEL COMPLETED</th>
+<th>TIME (s)</th>
 <th>STATUS</th>
 </tr>
+
 <tbody id="board"></tbody>
 </table>
 
@@ -54,7 +51,6 @@ import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.
 
 const firebaseConfig = {
   apiKey: "AIzaSyDZbLNAmcWBrNBNwR4c_sEtXXxYBPc63ts",
-  authDomain: "e-scavenger.firebaseapp.com",
   databaseURL: "https://e-scavenger-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "e-scavenger"
 };
@@ -62,38 +58,37 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-async function loadBoard(){
+async function load(){
 
-  const snap = await get(ref(db,"leaderboard"));
-  let data=[];
+  let snap = await get(ref(db,"leaderboard"));
 
-  if(snap.exists()){
-    data=Object.values(snap.val());
-  }
+  let data = snap.exists() ? Object.values(snap.val()) : [];
 
+  /* SORT BY LEVEL THEN TIME */
   data.sort((a,b)=>{
-    if(b.level===a.level) return a.time-b.time;
-    return b.level-a.level;
+    if(b.levelCompleted===a.levelCompleted)
+      return a.time-b.time;
+    return b.levelCompleted-a.levelCompleted;
   });
 
   let board=document.getElementById("board");
   board.innerHTML="";
 
-  document.getElementById("status").innerText="Live 🔥";
-
   data.forEach((p,i)=>{
+
     board.innerHTML+=`
-    <tr class="${i===0?'top':''}">
+    <tr>
       <td>${i+1}</td>
       <td>${p.name}</td>
+      <td>${p.levelCompleted}/5</td>
       <td>${p.time}</td>
-      <td>${p.level}</td>
       <td>${p.status}</td>
     </tr>`;
   });
+
 }
 
-loadBoard();
+load();
 
 </script>
 
