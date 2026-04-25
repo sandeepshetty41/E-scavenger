@@ -45,6 +45,16 @@ body{
 }
 #bgVideo.show{opacity:1;}
 
+#completeVideo{
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  z-index:10;
+  display:none;
+}
+
 .overlay{
   position:fixed;
   inset:0;
@@ -78,6 +88,7 @@ button{
   cursor:pointer;
 }
 
+#feedback{height:25px;margin-top:10px;}
 .correctText{color:#00ff88;}
 .wrongText{color:red;}
 </style>
@@ -91,11 +102,16 @@ button{
 </div>
 
 <video id="bgVideo" autoplay muted loop playsinline></video>
+
+<video id="completeVideo" playsinline>
+  <source src="complete.mp4" type="video/mp4">
+</video>
+
 <div class="overlay"></div>
 
 <h2 id="timer"></h2>
 
-<div class="box">
+<div class="box" id="gameBox">
   <h2 id="q"></h2>
 
   <input id="ans" autocomplete="off">
@@ -111,10 +127,11 @@ button{
 <!-- FIREBASE -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
+  apiKey: "AIzaSyDZbLNAmcWBrNBNwR4c_sEtXXxYBPc63ts",
+  authDomain: "e-scavenger.firebaseapp.com",
   databaseURL: "https://e-scavenger-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "e-scavenger"
 };
@@ -122,24 +139,22 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-/* ✅ FIXED SAVE FUNCTION */
-window.saveScore = async function(timeTaken){
-  try{
+window.saveScore = async function(status, timeTaken, level){
+  try {
     let team = sessionStorage.getItem("team") || "Anonymous";
 
-    await set(ref(db,"leaderboard/"+team+"_"+Date.now()),{
+    await push(ref(db,"leaderboard"),{
       name:team,
       time:timeTaken,
-      level:5,
-      status:"COMPLETED",
+      level:level + 1,
+      status:status,
       timestamp:Date.now()
     });
 
-    console.log("✅ FINAL SAVED");
+    console.log("Saved:",status);
 
-  }catch(err){
-    console.error("❌ Firebase Error:", err);
-    alert("Error saving score: " + err.message);
+  } catch(e){
+    console.error(e);
   }
 };
 </script>
@@ -149,7 +164,13 @@ window.saveScore = async function(timeTaken){
 let level = parseInt(sessionStorage.getItem("level")) || 0;
 let startTime = Number(sessionStorage.getItem("startTime")) || Date.now();
 
-sessionStorage.setItem("startTime", startTime);
+/* SAVE START ONLY ONCE */
+if(!sessionStorage.getItem("started")){
+  sessionStorage.setItem("started","true");
+  if(window.saveScore){
+    window.saveScore("STARTED",0,level);
+  }
+}
 
 const levelNames=["RIDDLES","PUZZLES","ENCRYPTION","LOGIC","BOSS"];
 
@@ -162,24 +183,18 @@ setTimeout(()=>document.getElementById("levelIntro").remove(),3000);
 let vid=document.getElementById("bgVideo");
 vid.innerHTML=`<source src="level${level+1}.mp4">`;
 vid.load();
+vid.play().catch(()=>{});
 
 /* TIMER */
 const TOTAL=2*60*60*1000;
 
-function format(n){
-  return n.toString().padStart(2,"0");
-}
-
 setInterval(()=>{
   let t=TOTAL-(Date.now()-startTime);
+  if(t<=0) window.location.href="leaderboard.html";
 
-  if(t<=0){
-    window.location.href="leaderboard.html";
-  }
-
-  let h=format(Math.floor(t/3600000));
-  let m=format(Math.floor((t%3600000)/60000));
-  let s=format(Math.floor((t%60000)/1000));
+  let h=Math.floor(t/3600000);
+  let m=Math.floor((t%3600000)/60000);
+  let s=Math.floor((t%60000)/1000);
 
   document.getElementById("timer").innerText=`${h}:${m}:${s}`;
 },1000);
@@ -215,8 +230,8 @@ function load(){
   gameData[level][qIndex].q;
 
   document.getElementById("ans").value="";
-  document.getElementById("feedback").innerText="";
   document.getElementById("hintBox").innerText="";
+  document.getElementById("feedback").innerText="";
 }
 load();
 
@@ -227,30 +242,39 @@ function showHint(){
 
 function check(){
 
+  let box=document.getElementById("gameBox");
   let f=document.getElementById("feedback");
+
   let a=document.getElementById("ans").value.toLowerCase().trim();
 
   if(a===gameData[level][qIndex].a){
 
+    box.classList.add("correct");
     f.innerText="✔ CORRECT";
     f.className="correctText";
 
     setTimeout(()=>{
 
+      box.classList.remove("correct");
       qIndex++;
 
       if(qIndex>=gameData[level].length){
+
+        let timeTaken=Math.floor((Date.now()-startTime)/1000);
+
+        if(window.saveScore){
+          window.saveScore("LEVEL COMPLETED",timeTaken,level);
+        }
 
         level++;
         sessionStorage.setItem("level",level);
 
         if(level>=gameData.length){
 
-          let timeTaken=Math.floor((Date.now()-startTime)/1000);
+          if(window.saveScore){
+            window.saveScore("COMPLETED",timeTaken,level);
+          }
 
-          window.saveScore(timeTaken);
-
-          alert("🎉 GAME COMPLETED!");
           window.location.href="leaderboard.html";
 
         }else{
@@ -263,10 +287,16 @@ function check(){
     },800);
 
   }else{
+    box.classList.add("wrong");
     f.innerText="✖ WRONG";
     f.className="wrongText";
 
-    setTimeout(()=>{ f.innerText=""; },800);
+    setTimeout(()=>{
+      box.classList.remove("wrong");
+      f.innerText="";
+    },800);
+
+    document.getElementById("ans").value="";
   }
 }
 
