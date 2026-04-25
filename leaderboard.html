@@ -6,9 +6,26 @@
 <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
 
 <style>
-body{margin:0;font-family:Orbitron;background:#05070f;color:#00ffe1;text-align:center;}
-table{margin:auto;margin-top:40px;width:85%;border-collapse:collapse;}
-th,td{border:1px solid #00ffe1;padding:15px;}
+body{
+  margin:0;
+  font-family:Orbitron;
+  background:#05070f;
+  color:#00ffe1;
+  text-align:center;
+}
+
+table{
+  margin:auto;
+  margin-top:40px;
+  width:85%;
+  border-collapse:collapse;
+}
+
+th,td{
+  border:1px solid #00ffe1;
+  padding:15px;
+}
+
 .top{color:#00ff88;}
 .fail{color:red;}
 </style>
@@ -47,11 +64,11 @@ const db = getDatabase(app);
 
 async function loadBoard(){
 
-  const snapshot = await get(ref(db,"leaderboard"));
+  const snap = await get(ref(db,"leaderboard"));
   let data=[];
 
-  if(snapshot.exists()){
-    data=Object.values(snapshot.val());
+  if(snap.exists()){
+    data=Object.values(snap.val());
   }
 
   data.sort((a,b)=>{
@@ -66,7 +83,7 @@ async function loadBoard(){
 
   data.forEach((p,i)=>{
     board.innerHTML+=`
-    <tr class="${i===0?'top':''} ${p.status==='TIME UP'?'fail':''}">
+    <tr class="${i===0?'top':''}">
       <td>${i+1}</td>
       <td>${p.name}</td>
       <td>${p.time}</td>
