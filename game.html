@@ -15,6 +15,7 @@ body{
   background:black;
 }
 
+/* 🎬 LEVEL INTRO */
 #levelIntro{
   position:fixed;
   inset:0;
@@ -24,15 +25,32 @@ body{
   align-items:center;
   background:black;
   z-index:20;
+  color:#00ffe1;
+  text-align:center;
   animation:fadeOut 3s forwards;
 }
 
+#levelIntro h1{
+  font-size:55px;
+  text-shadow:0 0 30px #00ffe1;
+  margin:0;
+}
+
+#levelIntro p{
+  font-size:22px;
+  color:#00ccff;
+  text-shadow:0 0 15px #00ccff;
+  margin-top:10px;
+}
+
+/* FADE OUT */
 @keyframes fadeOut{
   0%{opacity:1;}
   70%{opacity:1;}
-  100%{opacity:0;visibility:hidden;}
+  100%{opacity:0; visibility:hidden;}
 }
 
+/* 🎥 BACKGROUND VIDEO */
 #bgVideo{
   position:fixed;
   inset:0;
@@ -41,10 +59,13 @@ body{
   object-fit:cover;
   z-index:-3;
   opacity:0;
-  transition:0.8s;
+  transition:opacity 1s ease;
 }
-#bgVideo.show{opacity:1;}
+#bgVideo.show{
+  opacity:1;
+}
 
+/* 🎉 COMPLETE VIDEO */
 #completeVideo{
   position:fixed;
   inset:0;
@@ -55,6 +76,7 @@ body{
   display:none;
 }
 
+/* OVERLAY */
 .overlay{
   position:fixed;
   inset:0;
@@ -62,23 +84,80 @@ body{
   z-index:-2;
 }
 
+/* EXTRA DARK LEVEL 1 */
+.overlay.level1{
+  background:rgba(0,0,0,0.8);
+}
+
+/* GRID EFFECT */
+body::after{
+  content:"";
+  position:fixed;
+  inset:0;
+  background:
+    linear-gradient(rgba(0,255,225,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,255,225,0.05) 1px, transparent 1px);
+  background-size:50px 50px;
+  z-index:-1;
+}
+
+/* TIMER */
+#timer{
+  font-size:26px;
+  color:#00ff88;
+  margin-top:20px;
+  text-shadow:0 0 10px #00ff88;
+}
+
+/* BOX */
 .box{
   margin-top:8%;
   padding:30px;
   border:2px solid #00ffe1;
   background:rgba(0,0,0,0.6);
   box-shadow:0 0 25px #00ffe1;
+  transition:0.3s;
 }
 
+/* CORRECT */
+.correct{
+  border:2px solid #00ff88 !important;
+  box-shadow:0 0 25px #00ff88 !important;
+}
+
+/* WRONG */
+.wrong{
+  border:2px solid red !important;
+  box-shadow:0 0 25px red !important;
+}
+
+/* FEEDBACK */
+#feedback{
+  font-size:20px;
+  margin-top:10px;
+  height:25px;
+}
+.correctText{
+  color:#00ff88;
+  text-shadow:0 0 10px #00ff88;
+}
+.wrongText{
+  color:red;
+  text-shadow:0 0 10px red;
+}
+
+/* INPUT */
 input{
   padding:12px;
-  width:260px;
   background:black;
-  border:1px solid #00ffe1;
   color:#00ffe1;
+  border:1px solid #00ffe1;
+  width:260px;
   text-align:center;
+  outline:none;
 }
 
+/* BUTTON */
 button{
   margin:10px;
   padding:12px 25px;
@@ -86,30 +165,42 @@ button{
   color:#00ccff;
   border:2px solid #00ccff;
   cursor:pointer;
+  box-shadow:0 0 10px #00ccff;
+}
+button:hover{
+  background:#00ccff;
+  color:black;
+  box-shadow:0 0 25px #00ccff;
 }
 
-#feedback{height:25px;margin-top:10px;}
-.correctText{color:#00ff88;}
-.wrongText{color:red;}
+/* HINT */
+#hintBox{
+  color:#00ccff;
+  margin-top:10px;
+  text-shadow:0 0 10px #00ccff;
+}
 </style>
 </head>
 
 <body>
 
+<!-- 🎬 INTRO -->
 <div id="levelIntro">
   <h1 id="levelText"></h1>
   <p>MISSION START</p>
 </div>
 
+<!-- 🎥 BACKGROUND -->
 <video id="bgVideo" autoplay muted loop playsinline></video>
 
+<!-- 🎉 COMPLETE -->
 <video id="completeVideo" playsinline>
   <source src="complete.mp4" type="video/mp4">
 </video>
 
-<div class="overlay"></div>
+<div class="overlay" id="overlay"></div>
 
-<h2 id="timer"></h2>
+<h2 id="timer">02:00:00</h2>
 
 <div class="box" id="gameBox">
   <h2 id="q"></h2>
@@ -118,16 +209,156 @@ button{
   <br>
 
   <button onclick="check()">SUBMIT</button>
-  <button onclick="showHint()">HINT</button>
+  <button onclick="showHint()">HINT ⚡</button>
 
   <div id="feedback"></div>
   <p id="hintBox"></p>
 </div>
 
-<!-- FIREBASE -->
+<script>
+
+/* SESSION */
+let level = parseInt(sessionStorage.getItem("level")) || 0;
+let startTime = Number(sessionStorage.getItem("startTime")) || Date.now();
+sessionStorage.setItem("startTime", startTime);
+
+/* 🎬 LEVEL NAMES */
+const levelNames = [
+"RIDDLES",
+"PUZZLES",
+"ENCRYPTION",
+"LOGIC TRAP",
+"THE BOSS"
+];
+
+/* 🎬 SET INTRO TEXT */
+document.getElementById("levelText").innerText =
+"LEVEL " + (level + 1) + " - " + levelNames[level];
+
+/* REMOVE INTRO */
+setTimeout(()=>{
+  let intro = document.getElementById("levelIntro");
+  if(intro) intro.remove();
+},3000);
+
+/* 🎥 VIDEO LOAD */
+let vid = document.getElementById("bgVideo");
+vid.innerHTML = `<source src="level${level+1}.mp4" type="video/mp4">`;
+
+vid.addEventListener("canplay",()=>{
+  vid.classList.add("show");
+});
+vid.load();
+vid.play().catch(()=>{});
+
+/* DARK ONLY LEVEL 1 */
+if(level === 0){
+  document.getElementById("overlay").classList.add("level1");
+}
+
+/* TIMER */
+const TOTAL_TIME = 2*60*60*1000;
+
+function updateTimer(){
+  let elapsed = Date.now() - startTime;
+  let remaining = TOTAL_TIME - elapsed;
+
+  if(remaining <= 0){
+    window.location.href="leaderboard.html";
+    return;
+  }
+
+  let h=Math.floor(remaining/3600000);
+  let m=Math.floor((remaining%3600000)/60000);
+  let s=Math.floor((remaining%60000)/1000);
+
+  document.getElementById("timer").innerText =
+  `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+setInterval(updateTimer,1000);
+
+/* QUESTIONS */
+const gameData = [
+[
+{q:"I am the brain of the computer. I process instructions and make decisions, but I never think like a human. What am I?",a:"cpu",hint:"Every computer must have me to work"},
+{q:"I remember things only when the computer is awake. The moment power goes off, I forget everything. What am I?",a:"ram",hint:"Temporary memory"},
+{q:"I protect your system from harmful software and unwanted attacks, like a security guard for your computer. What am I?",a:"antivirus",hint:"I fight viruses"},
+{q:"I connect devices to the internet without using wires, and everyone asks for my password. What am I?",a:"wifi",hint:"Found in homes, colleges, and cafes"},
+{q:"I am a language used to build the structure of webpages, but I am not used for styling colors. What am I?",a:"html",hint:"Every website starts with me"},
+{q:"I store websites, apps, and files for many users at once, but I am not your personal laptop. What am I?",a:"server",hint:"Websites live on me"},
+{q:"I am a secret word that protects your account, and if someone knows me, they may enter your world. What am I?",a:"password",hint:"Never share me"},
+{q:"I have keys but no locks, space but no room, and you use me every day for coding. What am I?",a:"keyboard",hint:"You type on me"},
+{q:"I am made of only 0s and 1s, and computers understand me perfectly. What am I?",a:"binarylanguage",hint:"The language of machines"},
+{q:"I help you find information on the internet by typing words and pressing Enter. Google is one of me. What am I?",a:"searchengine",hint:"Used to search the web"},
+{q:"I am a place where all your files, photos, and software are stored permanently, even after shutdown. What am I?",a:"harddisk",hint:"HDD and SSD are my types"},
+{q:"I help computers in different networks talk to each other and choose the best path for data to travel. What am I?",a:"router",hint:"I guide internet traffic"},
+{q:"I translate website names like google.com into numbers computers understand. What am I?",a:"dns",hint:"Convert names into IP addresses"},
+{q:"I am the secure version of HTTP and show a lock symbol in the browser. What am I?",a:"https",hint:"Used for safe websites like banking"},
+{q:"I allow developers to save code changes, return to older versions, and work as a team. What am I?",a:"git",hint:"Push pull commit"}
+],
+[
+{q:"A computer has 8 bits in 1 unit. What is that unit called?",a:"byte",hint:"It is bigger than a bit"},
+{q:"If a password has 4 digits and each digit can be from 0–9, how many possible passwords are there?",a:"10000",hint:"Think 10 choices for each position"},
+{q:"A programmer writes code but the computer shows no output because of one missing symbol at the end of the line. What is the most common symbol?",a:"semicolon",hint:"Very common in C, Java, JavaScript"},
+{q:"I am not alive, but I can catch viruses. What am I?",a:"computer",hint:"You use me for coding and browsing"},
+{q:"If RAM is temporary memory, then what is permanent memory called?",a:"rom",hint:"Files stay even after shutdown"},
+{q:"A website starts with HTTP, but secure websites use what instead?",a:"https",hint:"Look for the lock symbol"},
+{q:"In binary, what comes after 111?",a:"1000",hint:"Same as counting after 7"},
+{q:"If one bug takes 5 minutes to fix, how long for 12 bugs?",a:"60",hint:"Simple multiplication"},
+{q:"Which key helps you move to the next line while typing code?",a:"enter",hint:"Used after writing a command"},
+{q:"A keyboard has many keys, but which key is most used for giving space between words?",a:"spacebar",hint:"It is the longest key"},
+{q:"If one computer takes 2 minutes to start, how long will 5 computers take to start if they are turned on at the same time?",a:"2",hint:"They start together"},
+{q:"Which number system uses only 0 and 1?",a:"binary",hint:"Computers love this system"},
+{q:"A file is deleted from the desktop. Where does it usually go first?",a:"recyclebin",hint:"It is not gone immediately"},
+{q:"A student forgets their password and clicks 'Forgot Password.' What is usually sent to help recover it?",a:"otp",hint:"Comes by email or phone"},
+{q:"Which part of the computer shows output visually?",a:"monitor",hint:"You are looking at it right now"}
+],
+[
+{q:"A message was encrypted by moving every letter one step forward. The encrypted message is XFMDPNF. Find the original word.",a:"welcome",hint:"Move each letter one step backward"},
+{q:"A technical word was hidden using simple letter shifting. The encrypted word is DPNQVUFS. What is it?",a:"computer",hint:"Used for coding and browsing"},
+{q:"A word related to account safety has been encrypted QBTTXPSE. What is it?",a:"password",hint:"Never share it"},
+{q:"A secret word is hidden using number positions 19-5-3-21-18-5. Find the word.",a:"secure",hint:"A=1 B=2 C=3"},
+{q:"A word related to internet connection is encrypted XJ-GJ. What is it?",a:"wifi",hint:"Wireless connection"},
+{q:"A secret message is hidden MJCBSBZ. Find the word.",a:"library",hint:"Place to study and read"},
+{q:"A technical room name is encrypted MBC. What is it?",a:"lab",hint:"Computer practical room"},
+{q:"A cybersecurity word is encrypted FODSZQUJPO. What is it?",a:"encryption",hint:"Protects data"},
+{q:"A coding language is hidden IUNM. What is it?",a:"html",hint:"Used to build webpages"},
+{q:"A login security feature is encrypted PUQ. What is it?",a:"otp",hint:"One time code"},
+{q:"A modern storage technology is encrypted DMPVE. What is it?",a:"cloud",hint:"Google Drive type storage"}
+],
+[
+{q:"Which keyword is used to make decisions in programming?",a:"if",hint:"Used before conditions like x > 10"},
+{q:"What is the name of repeating the same block of code multiple times automatically?",a:"loop",hint:"for and while are examples"},
+{q:"Which function is commonly used to display output in many programming languages?",a:"print",hint:"In Python it starts with p"},
+{q:"What do we call a named storage location used to keep values in programming?",a:"variable",hint:"x = 10 uses this"},
+{q:"Which loop is commonly used when the number of repetitions is already known?",a:"forloop",hint:"Used with counters"},
+{q:"What is the result type of 5 > 3 in programming?",a:"boolean",hint:"True or False"},
+{q:"What is the name of a block of code that performs a specific task and can be reused?",a:"function",hint:"Call it many times"},
+{q:"Which operator is used to compare equality in many languages like Python and Java?",a:"==",hint:"Not a single ="},
+{q:"Which keyword is used to repeat code while a condition remains true?",a:"while",hint:"Runs until condition becomes false"},
+{q:"What is the output of this code print 2 + 3 * 2 ?",a:"8",hint:"Multiplication first"},
+{q:"Which keyword is used when none of the if conditions are true?",a:"else",hint:"Final decision block"},
+{q:"Which function is used to take input from the user in Python?",a:"input",hint:"Opposite of print"},
+{q:"Which keyword is used to return a value from a function?",a:"return",hint:"Sends result back"},
+{q:"What is the output of print 10 // 3 ?",a:"3",hint:"Only whole number"},
+{q:"Which operator is used for not equal to in Python?",a:"!=",hint:"Exclamation mark"}
+],
+[
+{q:"Kiran writes a program where he keeps adding student names one after another. Later, he realizes all names are stored in continuous memory and can be accessed using an index. What did he use?",a:"array",hint:"Index based storage"},
+{q:"A security system fails even if one of the two checks password or fingerprint is wrong even though the other is correct. Which logic gate behavior is this?",a:"andgate",hint:"Both must succeed"},
+{q:"Sneha creates a class where users cannot directly change the balance but only through functions like deposit and withdraw. Which concept is used?",a:"encapsulation",hint:"Restrict direct access"},
+{q:"A clinic stores doctor details separately but connects them to patients during visits using IDs. What system is this?",a:"dbms",hint:"Multiple tables connected"},
+{q:"Rahul creates a program where one class inherits properties from another class to reuse code. What concept is this?",a:"inheritance",hint:"One class gets properties from another"}
+]
+];
+
+let qIndex=0;
+
 <script type="module">
+
+/* 🔥 FIREBASE SETUP */
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDZbLNAmcWBrNBNwR4c_sEtXXxYBPc63ts",
@@ -139,172 +370,115 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-window.saveScore = async function(status, timeTaken, level){
-  try {
-    let team = sessionStorage.getItem("team") || "Anonymous";
-
-    await push(ref(db,"leaderboard"),{
-      name:team,
-      time:timeTaken,
-      level:level + 1,
-      status:status,
-      timestamp:Date.now()
-    });
-
-    console.log("Saved:",status);
-
-  } catch(e){
-    console.error(e);
-  }
-};
-</script>
-
-<script>
-
-let level = parseInt(sessionStorage.getItem("level")) || 0;
-let startTime = Number(sessionStorage.getItem("startTime")) || Date.now();
-
-/* SAVE START ONLY ONCE */
-if(!sessionStorage.getItem("started")){
-  sessionStorage.setItem("started","true");
-  if(window.saveScore){
-    window.saveScore("STARTED",0,level);
-  }
+/* 👤 PLAYER NAME */
+let playerName = sessionStorage.getItem("playerName");
+if(!playerName){
+  playerName = prompt("Enter Team Name:");
+  sessionStorage.setItem("playerName", playerName);
 }
 
-const levelNames=["RIDDLES","PUZZLES","ENCRYPTION","LOGIC","BOSS"];
-
-document.getElementById("levelText").innerText=
-"LEVEL "+(level+1)+" - "+levelNames[level];
-
-setTimeout(()=>document.getElementById("levelIntro").remove(),3000);
-
-/* VIDEO */
-let vid=document.getElementById("bgVideo");
-vid.innerHTML=`<source src="level${level+1}.mp4">`;
-vid.load();
-vid.play().catch(()=>{});
+/* SESSION */
+let level = parseInt(sessionStorage.getItem("level")) || 0;
+let startTime = Number(sessionStorage.getItem("startTime")) || Date.now();
+sessionStorage.setItem("startTime", startTime);
 
 /* TIMER */
-const TOTAL=2*60*60*1000;
+const TOTAL_TIME = 2*60*60*1000;
 
-setInterval(()=>{
-  let t=TOTAL-(Date.now()-startTime);
-  if(t<=0) window.location.href="leaderboard.html";
+function updateTimer(){
+  let elapsed = Date.now() - startTime;
+  let remaining = TOTAL_TIME - elapsed;
 
-  let h=Math.floor(t/3600000);
-  let m=Math.floor((t%3600000)/60000);
-  let s=Math.floor((t%60000)/1000);
+  if(remaining <= 0){
+    saveToFirebase("TIME UP");
+    return;
+  }
 
-  document.getElementById("timer").innerText=`${h}:${m}:${s}`;
-},1000);
+  let h=Math.floor(remaining/3600000);
+  let m=Math.floor((remaining%3600000)/60000);
+  let s=Math.floor((remaining%60000)/1000);
 
-/* QUESTIONS */
-const gameData=[
-[
-{q:"I am the brain of the computer. What am I?",a:"cpu",hint:"Main processor"},
-{q:"I store temporary memory. What am I?",a:"ram",hint:"Volatile memory"}
-],
-[
-{q:"8 bits equals what?",a:"byte",hint:"Storage unit"},
-{q:"0 and 1 system?",a:"binary",hint:"Base 2"}
-],
-[
-{q:"XFMDPNF?",a:"welcome",hint:"Decode"},
-{q:"DPNQVUFS?",a:"computer",hint:"Device"}
-],
-[
-{q:"Decision keyword?",a:"if",hint:"Condition"},
-{q:"Loop is?",a:"loop",hint:"Repeat"}
-],
-[
-{q:"Indexed storage?",a:"array",hint:"List"},
-{q:"Hiding data?",a:"encapsulation",hint:"OOP"}
-]
-];
+  document.getElementById("timer").innerText =
+  `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+setInterval(updateTimer,1000);
+
+/* 🔥 SAVE FUNCTION */
+function saveToFirebase(status){
+
+  let endTime = Date.now();
+  let totalTime = Math.floor((endTime - startTime)/1000);
+
+  let data = {
+    name: playerName,
+    time: status==="COMPLETED" ? totalTime : 999999,
+    level: level,
+    status: status
+  };
+
+  let id = Date.now();
+  set(ref(db, "leaderboard/" + id), data);
+
+  window.location.href="leaderboard.html";
+}
+
+/* QUESTIONS (KEEP YOUR SAME DATA) */
+const gameData = window.gameData; // keep your existing questions
 
 let qIndex=0;
 
+/* LOAD */
 function load(){
-  document.getElementById("q").innerText=
-  gameData[level][qIndex].q;
-
+  document.getElementById("q").innerText=gameData[level][qIndex].q;
   document.getElementById("ans").value="";
   document.getElementById("hintBox").innerText="";
   document.getElementById("feedback").innerText="";
 }
 load();
 
+/* ENTER */
+document.getElementById("ans").addEventListener("keypress", function(e){
+  if(e.key === "Enter") check();
+});
+
+/* HINT */
 function showHint(){
-  document.getElementById("hintBox").innerText=
-  "💡 "+gameData[level][qIndex].hint;
+  document.getElementById("hintBox").innerText =
+  "💡 " + gameData[level][qIndex].hint;
 }
 
+/* CHECK */
 function check(){
-
-  let box=document.getElementById("gameBox");
-  let f=document.getElementById("feedback");
 
   let a=document.getElementById("ans").value.toLowerCase().trim();
 
   if(a===gameData[level][qIndex].a){
 
-    box.classList.add("correct");
-    f.innerText="✔ CORRECT";
-    f.className="correctText";
+    qIndex++;
 
-    setTimeout(()=>{
+    if(qIndex>=gameData[level].length){
 
-      box.classList.remove("correct");
-      qIndex++;
+      level++;
+      sessionStorage.setItem("level",level);
 
-      if(qIndex>=gameData[level].length){
+      if(level>=gameData.length){
+        saveToFirebase("COMPLETED"); // 🔥 FINAL SAVE
+      }else{
+        window.location.href="levels.html";
+      }
 
-        let timeTaken=Math.floor((Date.now()-startTime)/1000);
-
-        if(window.saveScore){
-          window.saveScore("LEVEL COMPLETED",timeTaken,level);
-        }
-
-        level++;
-        sessionStorage.setItem("level",level);
-
-        if(level>=gameData.length){
-
-          if(window.saveScore){
-            window.saveScore("COMPLETED",timeTaken,level);
-          }
-
-          window.location.href="leaderboard.html";
-
-        }else{
-          qIndex=0;
-          load();
-        }
-
-      }else load();
-
-    },800);
+    }else{
+      load();
+    }
 
   }else{
-    box.classList.add("wrong");
-    f.innerText="✖ WRONG";
-    f.className="wrongText";
-
-    setTimeout(()=>{
-      box.classList.remove("wrong");
-      f.innerText="";
-    },800);
-
     document.getElementById("ans").value="";
   }
 }
 
-document.getElementById("ans").addEventListener("keypress",(e)=>{
-  if(e.key==="Enter") check();
-});
+window.check = check;
+window.showHint = showHint;
 
 </script>
-
 </body>
 </html>
