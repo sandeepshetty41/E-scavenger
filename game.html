@@ -1,270 +1,232 @@
 <!DOCTYPE html>
 <html>
 <head>
+
 <title>GAME</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
 
 <style>
 body{
-  margin:0;
-  font-family:Orbitron;
-  color:#00ffe1;
-  text-align:center;
+margin:0;
+font-family:Orbitron;
+  background:black;
+color:#00ffe1;
+text-align:center;
   overflow:hidden;
   background:black;
 }
 
-#levelIntro{
-  position:fixed;
-  inset:0;
-  display:flex;
-  flex-direction:column;
-  justify-content:center;
-  align-items:center;
-  background:black;
-  z-index:20;
-  animation:fadeOut 3s forwards;
-}
-
-@keyframes fadeOut{
-  0%{opacity:1;}
-  70%{opacity:1;}
-  100%{opacity:0;visibility:hidden;}
-}
-
-#bgVideo{
-  position:fixed;
-  inset:0;
-  width:100%;
-  height:100%;
-  object-fit:cover;
-  z-index:-3;
-  opacity:0;
-  transition:0.8s;
-}
-#bgVideo.show{opacity:1;}
-
-.overlay{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,0.7);
-  z-index:-2;
-}
-
+#gameBox{
 .box{
-  margin-top:8%;
-  padding:30px;
-  border:2px solid #00ffe1;
-  background:rgba(0,0,0,0.6);
-  box-shadow:0 0 25px #00ffe1;
+margin-top:8%;
+padding:30px;
+border:2px solid #00ffe1;
+@@ -40,26 +39,34 @@
+border:2px solid #00ccff;
+cursor:pointer;
 }
 
-input{
-  padding:12px;
-  width:260px;
-  background:black;
-  border:1px solid #00ffe1;
-  color:#00ffe1;
-  text-align:center;
-}
-
-button{
-  margin:10px;
-  padding:12px 25px;
-  background:transparent;
-  color:#00ccff;
-  border:2px solid #00ccff;
-  cursor:pointer;
-}
-
+#hintBox{color:#00ccff;margin-top:10px;}
 #feedback{height:25px;margin-top:10px;}
-.correctText{color:#00ff88;}
-.wrongText{color:red;}
+.correct{color:#00ff88;}
+.wrong{color:red;}
 </style>
 </head>
 
 <body>
 
-<div id="levelIntro">
-  <h1 id="levelText"></h1>
-  <p>MISSION START</p>
-</div>
+<h2 id="q"></h2>
+<h2 id="q">Loading...</h2>
 
-<video id="bgVideo" autoplay muted loop playsinline></video>
-<div class="overlay"></div>
+<div class="box">
 
-<h2 id="timer"></h2>
+<div id="gameBox">
+<input id="ans" autocomplete="off">
+<br>
 
-<div class="box" id="gameBox">
-  <h2 id="q"></h2>
+<button onclick="check()">SUBMIT</button>
+<button onclick="showHint()">HINT</button>
 
-  <input id="ans" autocomplete="off">
-  <br>
+<p id="hintBox"></p>
+  <p id="feedback"></p>
 
-  <button onclick="check()">SUBMIT</button>
-  <button onclick="showHint()">HINT</button>
-
-  <div id="feedback"></div>
-  <p id="hintBox"></p>
 </div>
 
 <!-- FIREBASE -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDZbLNAmcWBrNBNwR4c_sEtXXxYBPc63ts",
-  authDomain: "e-scavenger.firebaseapp.com",
-  databaseURL: "https://e-scavenger-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "e-scavenger"
-};
-
-
+apiKey: "AIzaSyDZbLNAmcWBrNBNwR4c_sEtXXxYBPc63ts",
+@@ -71,116 +78,128 @@ <h2 id="q"></h2>
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-/* SAVE ONLY FINAL RESULT */
-window.saveScore = async function(timeTaken, level){
-  let team = sessionStorage.getItem("team") || "Anonymous";
+/* SAFE KEY */
+function getKey(name){
+  return name.replace(/\s+/g,'_');
+}
 
-  await set(ref(db,"leaderboard/"+team),{
-    name:team,
+/* CREATE / UPDATE SINGLE USER RECORD */
+window.saveProgress = async function(status, level){
+window.saveData = async function(status, level){
+
+let name = sessionStorage.getItem("team") || "Anonymous";
+  let key = getKey(name);
+
+  let startTime = Number(sessionStorage.getItem("startTime"));
+  let timeTaken = Math.floor((Date.now() - startTime)/1000);
+  let start = Number(sessionStorage.getItem("startTime")) || Date.now();
+  let time = Math.floor((Date.now() - start)/1000);
+
+  await set(ref(db,"leaderboard/"+key),{
+    name:name,
+  await set(ref(db,"leaderboard/"+name.replace(/\s/g,"_")),{
+    name,
+levelCompleted:level,
     time:timeTaken,
-    level:level,
-    status:"COMPLETED",
+    status:status,
     timestamp:Date.now()
-  });
-
-  console.log("Final Score Saved");
+    time,
+    status
+});
 };
+
 </script>
 
 <script>
 
 let level = parseInt(sessionStorage.getItem("level")) || 0;
 let startTime = Number(sessionStorage.getItem("startTime")) || Date.now();
+/* SAFE INIT */
+let level = Number(sessionStorage.getItem("level") || 0);
+let qIndex = 0;
 
-sessionStorage.setItem("startTime", startTime);
-
-const levelNames=["RIDDLES","PUZZLES","ENCRYPTION","LOGIC","BOSS"];
-
-document.getElementById("levelText").innerText=
-"LEVEL "+(level+1)+" - "+levelNames[level];
-
-setTimeout(()=>document.getElementById("levelIntro").remove(),3000);
-
-/* VIDEO */
-let vid=document.getElementById("bgVideo");
-vid.innerHTML=`<source src="level${level+1}.mp4">`;
-vid.load();
-vid.play().catch(()=>{});
-
-/* TIMER */
-const TOTAL=2*60*60*1000;
-
-setInterval(()=>{
-  let t=TOTAL-(Date.now()-startTime);
-  if(t<=0) window.location.href="leaderboard.html";
-
-  let h=Math.floor(t/3600000);
-  let m=Math.floor((t%3600000)/60000);
-  let s=Math.floor((t%60000)/1000);
-
-  document.getElementById("timer").innerText=`${h}:${m}:${s}`;
-},1000);
+if(!sessionStorage.getItem("startTime")){
+  sessionStorage.setItem("startTime",Date.now());
+}
 
 /* QUESTIONS */
-const gameData=[
+const gameData = [
 [
-{q:"I am the brain of the computer. What am I?",a:"cpu",hint:"Main processor"},
-{q:"I store temporary memory. What am I?",a:"ram",hint:"Volatile memory"}
+{q:"CPU stands for?", a:"cpu", hint:"Brain of computer"},
+{q:"Temporary memory?", a:"ram", hint:"Volatile memory"}
 ],
 [
-{q:"8 bits equals what?",a:"byte",hint:"Storage unit"},
-{q:"0 and 1 system?",a:"binary",hint:"Base 2"}
+{q:"8 bits = ?", a:"byte", hint:"Storage unit"},
+{q:"0 and 1 system?", a:"binary", hint:"Base 2"}
+{q:"Binary system uses?", a:"binary", hint:"0 and 1"}
 ],
 [
-{q:"XFMDPNF?",a:"welcome",hint:"Decode"},
-{q:"DPNQVUFS?",a:"computer",hint:"Device"}
+{q:"XFMDPNF?", a:"welcome", hint:"Decode"},
+{q:"DPNQVUFS?", a:"computer", hint:"Device"}
 ],
 [
-{q:"Decision keyword?",a:"if",hint:"Condition"},
-{q:"Loop is?",a:"loop",hint:"Repeat"}
+{q:"Decision keyword?", a:"if", hint:"Condition"},
+{q:"Loop is?", a:"loop", hint:"Repeat"}
+{q:"Loop means?", a:"loop", hint:"Repeat"}
 ],
 [
-{q:"Indexed storage?",a:"array",hint:"List"},
-{q:"Hiding data?",a:"encapsulation",hint:"OOP"}
+{q:"Indexed structure?", a:"array", hint:"List"},
+{q:"Hide data concept?", a:"encapsulation", hint:"OOP"}
 ]
 ];
 
 let qIndex=0;
+/* GUARANTEE LOAD ONLY WHEN READY */
+window.onload = function(){
+  load();
+};
 
 function load(){
-  document.getElementById("q").innerText=gameData[level][qIndex].q;
-  document.getElementById("ans").value="";
-  document.getElementById("hintBox").innerText="";
+
+  if(!gameData[level] || !gameData[level][qIndex]){
+    document.getElementById("q").innerText="ERROR LOADING QUESTION";
+    return;
+  }
+
+document.getElementById("q").innerText =
+gameData[level][qIndex].q;
+
+document.getElementById("ans").value="";
+document.getElementById("hintBox").innerText="";
   document.getElementById("feedback").innerText="";
 }
 load();
 
 function showHint(){
-  document.getElementById("hintBox").innerText="💡 "+gameData[level][qIndex].hint;
+window.showHint = function(){
+document.getElementById("hintBox").innerText =
+"💡 "+gameData[level][qIndex].hint;
 }
 
-function check(){
+async function check(){
+window.check = async function(){
 
-  let box=document.getElementById("gameBox");
-  let f=document.getElementById("feedback");
+  let input = document.getElementById("ans").value.toLowerCase().trim();
+  let correct = gameData[level][qIndex].a;
 
   let a=document.getElementById("ans").value.toLowerCase().trim();
+  let fb = document.getElementById("feedback");
 
   if(a===gameData[level][qIndex].a){
+  if(input === correct){
 
-    f.innerText="✔ CORRECT";
-    f.className="correctText";
+qIndex++;
 
-    setTimeout(()=>{
+    if(qIndex>=gameData[level].length){
+    if(qIndex >= gameData[level].length){
 
-      qIndex++;
+level++;
+sessionStorage.setItem("level",level);
 
-      if(qIndex>=gameData[level].length){
+      /* UPDATE PROGRESS (ONLY ONE RECORD) */
+      if(level>=gameData.length){
+      await window.saveData("LEVEL COMPLETED", level);
 
-        level++;
-        sessionStorage.setItem("level",level);
+        await window.saveProgress("COMPLETED",level);
+      if(level >= gameData.length){
 
-        if(level>=gameData.length){
+        await window.saveData("COMPLETED", level);
+window.location.href="leaderboard.html";
 
-          let timeTaken=Math.floor((Date.now()-startTime)/1000);
+      }else{
 
-          if(window.saveScore){
-            window.saveScore(timeTaken, level);
-          }
-
-          window.location.href="leaderboard.html";
-
-        }else{
-          qIndex=0;
-          load();
-        }
-
-      }else load();
-
-    },500);
-
-  }else{
-    f.innerText="✖ WRONG";
-    f.className="wrongText";
-    document.getElementById("ans").value="";
-  }
+        await window.saveProgress("LEVEL COMPLETED",level);
+        qIndex=0;
+      } else {
+        qIndex = 0;
+load();
 }
 
-document.getElementById("ans").addEventListener("keypress",(e)=>{
+    }else{
+    } else {
+load();
+}
+
+  }else{
+    fb.innerText="✔ CORRECT";
+    fb.className="correct";
+
+  } else {
+
+    fb.innerText="✖ WRONG";
+    fb.className="wrong";
+document.getElementById("ans").value="";
+}
+}
+
+/* TIME OUT */
+setTimeout(async ()=>{
+  await window.saveProgress("GAME OVER",level);
+  window.location.href="leaderboard.html";
+},2*60*60*1000);
+/* ENTER KEY SUPPORT */
+document.addEventListener("keydown",(e)=>{
   if(e.key==="Enter") check();
 });
 
 </script>
-
-</body>
-</html>
