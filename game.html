@@ -1,21 +1,20 @@
 <!DOCTYPE html>
 <html>
 <head>
-
 <title>GAME</title>
+
 <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
 
 <style>
 body{
   margin:0;
   font-family:Orbitron;
+  background:black;
   color:#00ffe1;
   text-align:center;
-  overflow:hidden;
-  background:black;
 }
 
-#gameBox{
+.box{
   margin-top:8%;
   padding:30px;
   border:2px solid #00ffe1;
@@ -40,26 +39,34 @@ button{
   border:2px solid #00ccff;
   cursor:pointer;
 }
+
+#hintBox{color:#00ccff;margin-top:10px;}
+#feedback{height:25px;margin-top:10px;}
+.correct{color:#00ff88;}
+.wrong{color:red;}
 </style>
 </head>
 
 <body>
 
-<h2 id="q"></h2>
+<h2 id="q">Loading...</h2>
 
-<div id="gameBox">
+<div class="box">
+
   <input id="ans" autocomplete="off">
   <br>
+
   <button onclick="check()">SUBMIT</button>
   <button onclick="showHint()">HINT</button>
 
   <p id="hintBox"></p>
+  <p id="feedback"></p>
+
 </div>
 
-<!-- FIREBASE -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, set, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, set } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDZbLNAmcWBrNBNwR4c_sEtXXxYBPc63ts",
@@ -71,26 +78,17 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-/* SAFE KEY */
-function getKey(name){
-  return name.replace(/\s+/g,'_');
-}
-
-/* CREATE / UPDATE SINGLE USER RECORD */
-window.saveProgress = async function(status, level){
+window.saveData = async function(status, level){
 
   let name = sessionStorage.getItem("team") || "Anonymous";
-  let key = getKey(name);
+  let start = Number(sessionStorage.getItem("startTime")) || Date.now();
+  let time = Math.floor((Date.now() - start)/1000);
 
-  let startTime = Number(sessionStorage.getItem("startTime"));
-  let timeTaken = Math.floor((Date.now() - startTime)/1000);
-
-  await set(ref(db,"leaderboard/"+key),{
-    name:name,
+  await set(ref(db,"leaderboard/"+name.replace(/\s/g,"_")),{
+    name,
     levelCompleted:level,
-    time:timeTaken,
-    status:status,
-    timestamp:Date.now()
+    time,
+    status
   });
 };
 
@@ -98,9 +96,15 @@ window.saveProgress = async function(status, level){
 
 <script>
 
-let level = parseInt(sessionStorage.getItem("level")) || 0;
-let startTime = Number(sessionStorage.getItem("startTime")) || Date.now();
+/* SAFE INIT */
+let level = Number(sessionStorage.getItem("level") || 0);
+let qIndex = 0;
 
+if(!sessionStorage.getItem("startTime")){
+  sessionStorage.setItem("startTime",Date.now());
+}
+
+/* QUESTIONS */
 const gameData = [
 [
 {q:"CPU stands for?", a:"cpu", hint:"Brain of computer"},
@@ -108,7 +112,7 @@ const gameData = [
 ],
 [
 {q:"8 bits = ?", a:"byte", hint:"Storage unit"},
-{q:"0 and 1 system?", a:"binary", hint:"Base 2"}
+{q:"Binary system uses?", a:"binary", hint:"0 and 1"}
 ],
 [
 {q:"XFMDPNF?", a:"welcome", hint:"Decode"},
@@ -116,7 +120,7 @@ const gameData = [
 ],
 [
 {q:"Decision keyword?", a:"if", hint:"Condition"},
-{q:"Loop is?", a:"loop", hint:"Repeat"}
+{q:"Loop means?", a:"loop", hint:"Repeat"}
 ],
 [
 {q:"Indexed structure?", a:"array", hint:"List"},
@@ -124,63 +128,78 @@ const gameData = [
 ]
 ];
 
-let qIndex=0;
+/* GUARANTEE LOAD ONLY WHEN READY */
+window.onload = function(){
+  load();
+};
 
 function load(){
+
+  if(!gameData[level] || !gameData[level][qIndex]){
+    document.getElementById("q").innerText="ERROR LOADING QUESTION";
+    return;
+  }
+
   document.getElementById("q").innerText =
   gameData[level][qIndex].q;
 
   document.getElementById("ans").value="";
   document.getElementById("hintBox").innerText="";
+  document.getElementById("feedback").innerText="";
 }
-load();
 
-function showHint(){
+window.showHint = function(){
   document.getElementById("hintBox").innerText =
   "💡 "+gameData[level][qIndex].hint;
 }
 
-async function check(){
+window.check = async function(){
 
-  let a=document.getElementById("ans").value.toLowerCase().trim();
+  let input = document.getElementById("ans").value.toLowerCase().trim();
+  let correct = gameData[level][qIndex].a;
 
-  if(a===gameData[level][qIndex].a){
+  let fb = document.getElementById("feedback");
+
+  if(input === correct){
 
     qIndex++;
 
-    if(qIndex>=gameData[level].length){
+    if(qIndex >= gameData[level].length){
 
       level++;
       sessionStorage.setItem("level",level);
 
-      /* UPDATE PROGRESS (ONLY ONE RECORD) */
-      if(level>=gameData.length){
+      await window.saveData("LEVEL COMPLETED", level);
 
-        await window.saveProgress("COMPLETED",level);
+      if(level >= gameData.length){
 
+        await window.saveData("COMPLETED", level);
         window.location.href="leaderboard.html";
 
-      }else{
-
-        await window.saveProgress("LEVEL COMPLETED",level);
-        qIndex=0;
+      } else {
+        qIndex = 0;
         load();
       }
 
-    }else{
+    } else {
       load();
     }
 
-  }else{
+    fb.innerText="✔ CORRECT";
+    fb.className="correct";
+
+  } else {
+
+    fb.innerText="✖ WRONG";
+    fb.className="wrong";
     document.getElementById("ans").value="";
   }
 }
 
-/* TIME OUT */
-setTimeout(async ()=>{
-  await window.saveProgress("GAME OVER",level);
-  window.location.href="leaderboard.html";
-},2*60*60*1000);
+/* ENTER KEY SUPPORT */
+document.addEventListener("keydown",(e)=>{
+  if(e.key==="Enter") check();
+});
 
 </script>
 
