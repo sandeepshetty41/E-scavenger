@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html>
 <head>
-
 <title>GAME</title>
 
 <link href="https://fonts.googleapis.com/css2?family=Orbitron&display=swap" rel="stylesheet">
@@ -16,7 +15,6 @@ body{
   background:black;
 }
 
-/* INTRO */
 #levelIntro{
   position:fixed;
   inset:0;
@@ -35,7 +33,6 @@ body{
   100%{opacity:0;visibility:hidden;}
 }
 
-/* VIDEO */
 #bgVideo{
   position:fixed;
   inset:0;
@@ -48,7 +45,6 @@ body{
 }
 #bgVideo.show{opacity:1;}
 
-/* COMPLETE VIDEO */
 #completeVideo{
   position:fixed;
   inset:0;
@@ -59,7 +55,6 @@ body{
   display:none;
 }
 
-/* OVERLAY */
 .overlay{
   position:fixed;
   inset:0;
@@ -67,7 +62,6 @@ body{
   z-index:-2;
 }
 
-/* BOX */
 .box{
   margin-top:8%;
   padding:30px;
@@ -76,7 +70,6 @@ body{
   box-shadow:0 0 25px #00ffe1;
 }
 
-/* INPUT */
 input{
   padding:12px;
   width:260px;
@@ -86,7 +79,6 @@ input{
   text-align:center;
 }
 
-/* BUTTON */
 button{
   margin:10px;
   padding:12px 25px;
@@ -96,26 +88,21 @@ button{
   cursor:pointer;
 }
 
-/* FEEDBACK */
 #feedback{height:25px;margin-top:10px;}
 .correctText{color:#00ff88;}
 .wrongText{color:red;}
-
 </style>
 </head>
 
 <body>
 
-<!-- INTRO -->
 <div id="levelIntro">
   <h1 id="levelText"></h1>
   <p>MISSION START</p>
 </div>
 
-<!-- VIDEO -->
 <video id="bgVideo" autoplay muted loop playsinline></video>
 
-<!-- COMPLETE -->
 <video id="completeVideo" playsinline>
   <source src="complete.mp4" type="video/mp4">
 </video>
@@ -137,6 +124,7 @@ button{
   <p id="hintBox"></p>
 </div>
 
+<!-- FIREBASE -->
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
@@ -151,45 +139,49 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-/* ✅ GLOBAL SAVE FUNCTION (FIXED + ALWAYS WORKS) */
 window.saveScore = async function(status, timeTaken, level){
-
   try {
+    let team = sessionStorage.getItem("team") || "Anonymous";
 
-    let team = sessionStorage.getItem("team");
-    if(!team) team = "Anonymous";
-
-    await push(ref(db, "leaderboard"), {
-      name: team,
-      time: timeTaken,
-      level: level,
-      status: status,
-      timestamp: Date.now()
+    await push(ref(db,"leaderboard"),{
+      name:team,
+      time:timeTaken,
+      level:level + 1,
+      status:status,
+      timestamp:Date.now()
     });
 
-    console.log("🔥 Saved to Firebase:", team);
+    console.log("Saved:",status);
 
-  } catch (err) {
-    console.error("❌ Firebase save error:", err);
+  } catch(e){
+    console.error(e);
   }
 };
 </script>
 
+<script>
+
 let level = parseInt(sessionStorage.getItem("level")) || 0;
 let startTime = Number(sessionStorage.getItem("startTime")) || Date.now();
+
+/* SAVE START ONLY ONCE */
+if(!sessionStorage.getItem("started")){
+  sessionStorage.setItem("started","true");
+  if(window.saveScore){
+    window.saveScore("STARTED",0,level);
+  }
+}
 
 const levelNames=["RIDDLES","PUZZLES","ENCRYPTION","LOGIC","BOSS"];
 
 document.getElementById("levelText").innerText=
 "LEVEL "+(level+1)+" - "+levelNames[level];
 
-setTimeout(()=>{
-  document.getElementById("levelIntro").remove();
-},3000);
+setTimeout(()=>document.getElementById("levelIntro").remove(),3000);
 
 /* VIDEO */
 let vid=document.getElementById("bgVideo");
-vid.innerHTML=`<source src="level${level+1}.mp4" type="video/mp4">`;
+vid.innerHTML=`<source src="level${level+1}.mp4">`;
 vid.load();
 vid.play().catch(()=>{});
 
@@ -204,50 +196,36 @@ setInterval(()=>{
   let m=Math.floor((t%3600000)/60000);
   let s=Math.floor((t%60000)/1000);
 
-  document.getElementById("timer").innerText=
-  `${h}:${m}:${s}`;
+  document.getElementById("timer").innerText=`${h}:${m}:${s}`;
 },1000);
 
-/* FULL FIXED Q&A (YOUR DATA CLEANED) */
-const gameData = [
-
-/* LEVEL 1 */
+/* QUESTIONS */
+const gameData=[
 [
-{q:"I am the brain of the computer. What am I?", a:"cpu", hint:"Main processor"},
-{q:"I store temporary memory. What am I?", a:"ram", hint:"Volatile memory"}
+{q:"I am the brain of the computer. What am I?",a:"cpu",hint:"Main processor"},
+{q:"I store temporary memory. What am I?",a:"ram",hint:"Volatile memory"}
 ],
-
-/* LEVEL 2 */
 [
-{q:"8 bits equals what?", a:"byte", hint:"Storage unit"},
-{q:"0 and 1 system is called?", a:"binary", hint:"Base 2 system"}
+{q:"8 bits equals what?",a:"byte",hint:"Storage unit"},
+{q:"0 and 1 system?",a:"binary",hint:"Base 2"}
 ],
-
-/* LEVEL 3 */
 [
-{q:"XFMDPNF decrypted word?", a:"welcome", hint:"Shift back letters"},
-{q:"DPNQVUFS decrypted word?", a:"computer", hint:"Common device"}
+{q:"XFMDPNF?",a:"welcome",hint:"Decode"},
+{q:"DPNQVUFS?",a:"computer",hint:"Device"}
 ],
-
-/* LEVEL 4 */
 [
-{q:"Decision keyword in programming?", a:"if", hint:"Condition check"},
-{q:"Repeating code is called?", a:"loop", hint:"Iteration"}
+{q:"Decision keyword?",a:"if",hint:"Condition"},
+{q:"Loop is?",a:"loop",hint:"Repeat"}
 ],
-
-/* LEVEL 5 */
 [
-{q:"Indexed storage structure?", a:"array", hint:"List of items"},
-{q:"OOP concept hiding data?", a:"encapsulation", hint:"Security in classes"}
+{q:"Indexed storage?",a:"array",hint:"List"},
+{q:"Hiding data?",a:"encapsulation",hint:"OOP"}
 ]
-
 ];
 
 let qIndex=0;
 
 function load(){
-  if(!gameData[level] || !gameData[level][qIndex]) return;
-
   document.getElementById("q").innerText=
   gameData[level][qIndex].q;
 
@@ -263,8 +241,6 @@ function showHint(){
 }
 
 function check(){
-
-  if(!gameData[level][qIndex]) return;
 
   let box=document.getElementById("gameBox");
   let f=document.getElementById("feedback");
@@ -284,16 +260,23 @@ function check(){
 
       if(qIndex>=gameData[level].length){
 
+        let timeTaken=Math.floor((Date.now()-startTime)/1000);
+
+        if(window.saveScore){
+          window.saveScore("LEVEL COMPLETED",timeTaken,level);
+        }
+
         level++;
         sessionStorage.setItem("level",level);
 
         if(level>=gameData.length){
 
-          let timeTaken=Math.floor((Date.now()-startTime)/1000);
-          if(window.saveScore)
-            window.saveScore("COMPLETED",timeTaken,level+1);
+          if(window.saveScore){
+            window.saveScore("COMPLETED",timeTaken,level);
+          }
 
           window.location.href="leaderboard.html";
+
         }else{
           qIndex=0;
           load();
@@ -304,7 +287,6 @@ function check(){
     },800);
 
   }else{
-
     box.classList.add("wrong");
     f.innerText="✖ WRONG";
     f.className="wrongText";
