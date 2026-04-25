@@ -7,20 +7,17 @@
 
 <style>
 body{
-  margin:0;
-  font-family:Orbitron;
   background:black;
   color:#00ffe1;
+  font-family:Orbitron;
   text-align:center;
 }
-
 table{
   margin:auto;
   margin-top:40px;
-  width:85%;
+  width:80%;
   border-collapse:collapse;
 }
-
 th,td{
   border:1px solid #00ffe1;
   padding:15px;
@@ -36,7 +33,7 @@ th,td{
 <tr>
 <th>RANK</th>
 <th>TEAM</th>
-<th>LEVEL COMPLETED</th>
+<th>LEVEL</th>
 <th>TIME (s)</th>
 <th>STATUS</th>
 </tr>
@@ -47,8 +44,9 @@ th,td{
 <script type="module">
 
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
-import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
+import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
+/* SAME CONFIG */
 const firebaseConfig = {
   apiKey: "AIzaSyDZbLNAmcWBrNBNwR4c_sEtXXxYBPc63ts",
   databaseURL: "https://e-scavenger-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -58,38 +56,29 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-async function load(){
-
-  let snap = await get(ref(db,"leaderboard"));
+/* LIVE LISTENER */
+onValue(ref(db,"leaderboard"),(snap)=>{
 
   let data = snap.exists() ? Object.values(snap.val()) : [];
 
-  /* SORT BY LEVEL THEN TIME */
-  data.sort((a,b)=>{
-    if(b.levelCompleted===a.levelCompleted)
-      return a.time-b.time;
-    return b.levelCompleted-a.levelCompleted;
-  });
+  /* SORT BY TIME */
+  data.sort((a,b)=>a.time-b.time);
 
   let board=document.getElementById("board");
   board.innerHTML="";
 
   data.forEach((p,i)=>{
-
     board.innerHTML+=`
     <tr>
       <td>${i+1}</td>
       <td>${p.name}</td>
-      <td>${p.levelCompleted}/5</td>
+      <td>${p.level}</td>
       <td>${p.time}</td>
       <td>${p.status}</td>
     </tr>`;
   });
 
-}
-
-load();
-
+});
 </script>
 
 </body>
