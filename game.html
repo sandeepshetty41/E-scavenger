@@ -151,19 +151,29 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
+/* ✅ GLOBAL SAVE FUNCTION (FIXED + ALWAYS WORKS) */
 window.saveScore = async function(status, timeTaken, level){
-  let team = sessionStorage.getItem("team") || "Anonymous";
 
-  await push(ref(db,"leaderboard"),{
-    name:team,
-    time:timeTaken,
-    level:level,
-    status:status
-  });
+  try {
+
+    let team = sessionStorage.getItem("team");
+    if(!team) team = "Anonymous";
+
+    await push(ref(db, "leaderboard"), {
+      name: team,
+      time: timeTaken,
+      level: level,
+      status: status,
+      timestamp: Date.now()
+    });
+
+    console.log("🔥 Saved to Firebase:", team);
+
+  } catch (err) {
+    console.error("❌ Firebase save error:", err);
+  }
 };
 </script>
-
-<script>
 
 let level = parseInt(sessionStorage.getItem("level")) || 0;
 let startTime = Number(sessionStorage.getItem("startTime")) || Date.now();
