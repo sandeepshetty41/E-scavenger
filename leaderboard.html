@@ -7,7 +7,7 @@
 
 <style>
 body{
-  background:black;
+  background:#05070f;
   color:#00ffe1;
   font-family:Orbitron;
   text-align:center;
@@ -15,29 +15,29 @@ body{
 table{
   margin:auto;
   margin-top:40px;
-  width:80%;
+  width:85%;
   border-collapse:collapse;
 }
 th,td{
   border:1px solid #00ffe1;
   padding:15px;
 }
+.top{color:#00ff88;}
 </style>
 </head>
 
 <body>
 
-<h1>🏆 LEADERBOARD</h1>
+<h1>🏆 FINAL LEADERBOARD</h1>
 
 <table>
 <tr>
 <th>RANK</th>
 <th>TEAM</th>
+<th>TIME</th>
 <th>LEVEL</th>
-<th>TIME (s)</th>
 <th>STATUS</th>
 </tr>
-
 <tbody id="board"></tbody>
 </table>
 
@@ -46,7 +46,6 @@ th,td{
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-database.js";
 
-/* SAME CONFIG */
 const firebaseConfig = {
   apiKey: "AIzaSyDZbLNAmcWBrNBNwR4c_sEtXXxYBPc63ts",
   databaseURL: "https://e-scavenger-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -56,12 +55,11 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getDatabase(app);
 
-/* LIVE LISTENER */
+/* LIVE DATA */
 onValue(ref(db,"leaderboard"),(snap)=>{
 
   let data = snap.exists() ? Object.values(snap.val()) : [];
 
-  /* SORT BY TIME */
   data.sort((a,b)=>a.time-b.time);
 
   let board=document.getElementById("board");
@@ -69,11 +67,11 @@ onValue(ref(db,"leaderboard"),(snap)=>{
 
   data.forEach((p,i)=>{
     board.innerHTML+=`
-    <tr>
+    <tr class="${i===0?'top':''}">
       <td>${i+1}</td>
       <td>${p.name}</td>
-      <td>${p.level}</td>
       <td>${p.time}</td>
+      <td>${p.level}</td>
       <td>${p.status}</td>
     </tr>`;
   });
